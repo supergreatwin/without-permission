@@ -2,6 +2,63 @@
 const base=new URL('.',document.currentScript.src);
 const params=new URLSearchParams(location.search);
 const language=params.get('lang')==='en'?'en':'ar';
+
+/* A saved explicit choice takes priority; otherwise follow the device theme. */
+const themeStorageKey='without-permission-theme';
+const systemTheme=typeof window.matchMedia==='function'?window.matchMedia('(prefers-color-scheme: dark)'):null;
+let savedTheme=null;
+try{const value=window.localStorage.getItem(themeStorageKey);if(value==='dark'||value==='light')savedTheme=value;}catch(_error){}
+let currentTheme=savedTheme||(systemTheme?.matches?'dark':'light');
+function applyTheme(value){
+ currentTheme=value;
+ document.documentElement.setAttribute('data-theme',value);
+ const bar=document.querySelector('meta[name="theme-color"]');
+ if(bar)bar.setAttribute('content',value==='dark'?'#160e18':'#52152f');
+ document.querySelectorAll('[data-theme-switch]').forEach(button=>{
+  const lang=button.dataset.themeLanguage||'ar';
+  const isDark=value==='dark';
+  const action=lang==='ar'?(isDark?'التبديل للوضع الفاتح':'التبديل للوضع الداكن'):(isDark?'Switch to light mode':'Switch to dark mode');
+  button.setAttribute('aria-label',action);
+  button.setAttribute('aria-pressed',String(isDark));
+  button.title=action;
+  const icon=button.querySelector('.theme-icon');
+  const label=button.querySelector('.theme-label');
+  if(icon)icon.textContent=isDark?'☀':'☾';
+  if(label)label.textContent=lang==='ar'?(isDark?'فاتح':'داكن'):(isDark?'Light':'Dark');
+ });
+}
+function toggleTheme(){
+ savedTheme=currentTheme==='dark'?'light':'dark';
+ try{window.localStorage.setItem(themeStorageKey,savedTheme);}catch(_error){}
+ applyTheme(savedTheme);
+}
+applyTheme(currentTheme);
+document.querySelectorAll('.site-header').forEach(header=>{
+ const lang=header.dataset.lang==='en'?'en':'ar';
+ for(const selector of ['.desktop-nav','.mobile-panel nav']){
+  const nav=header.querySelector(selector);
+  if(!nav||nav.querySelector('[data-theme-switch]'))continue;
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='theme-toggle';
+  button.dataset.themeSwitch='';
+  button.dataset.themeLanguage=lang;
+  const icon=document.createElement('span');
+  icon.className='theme-icon';
+  icon.setAttribute('aria-hidden','true');
+  const label=document.createElement('span');
+  label.className='theme-label';
+  button.append(icon,label);
+  button.addEventListener('click',toggleTheme);
+  const locale=nav.querySelector('.lang-switch');
+  if(locale)locale.before(button);else nav.append(button);
+ }
+});
+applyTheme(currentTheme);
+systemTheme?.addEventListener?.('change',event=>{
+ if(savedTheme===null)applyTheme(event.matches?'dark':'light');
+});
+
 document.documentElement.lang=language==='en'?'en':'ar-EG';
 document.documentElement.dir=language==='en'?'ltr':'rtl';
 document.querySelectorAll('[data-lang]').forEach(el=>{el.hidden=el.dataset.lang!==language;});
