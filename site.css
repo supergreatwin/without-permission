@@ -107,6 +107,14 @@ html[lang=en] body{font-family:var(--latin);line-height:1.75}html[lang=en] :is(.
 :root[data-theme="dark"] .article-body .article-contents a{color:#F5BCD0}
 :root[data-theme="dark"] .socials a{color:#F6C8D7}
 :root[data-theme="dark"] .footer .socials a{color:#F6C8D7}
+/* Inline manifesto pull quotes on the About page need a dark-surface override. */
+:root[data-theme="dark"] .reading > blockquote[style]{
+ background:#342532!important;
+ color:#F6E9ED!important;
+ border-inline-start-color:#EFAAC2!important;
+}
+:root[data-theme="dark"] .article-body strong,
+:root[data-theme="dark"] .reading strong{color:#FFE5ED}
 /* Minimal icon-only, accessible theme switch. */
 .theme-toggle{
  display:inline-grid;place-items:center;flex:none;
