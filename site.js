@@ -13,7 +13,7 @@ function applyTheme(value){
  currentTheme=value;
  document.documentElement.setAttribute('data-theme',value);
  const bar=document.querySelector('meta[name="theme-color"]');
- if(bar)bar.setAttribute('content',value==='dark'?'#160e18':'#52152f');
+ if(bar)bar.setAttribute('content',value==='dark'?'#151014':'#52152f');
  document.querySelectorAll('[data-theme-switch]').forEach(button=>{
   const lang=button.dataset.themeLanguage||'ar';
   const isDark=value==='dark';
@@ -22,9 +22,11 @@ function applyTheme(value){
   button.setAttribute('aria-pressed',String(isDark));
   button.title=action;
   const icon=button.querySelector('.theme-icon');
-  const label=button.querySelector('.theme-label');
-  if(icon)icon.textContent=isDark?'☀':'☾';
-  if(label)label.textContent=lang==='ar'?(isDark?'فاتح':'داكن'):(isDark?'Light':'Dark');
+  if(icon){
+   const sun='<svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>';
+   const moon='<svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486A9 9 0 1 1 11.515 3.02a7 7 0 0 0 9.47 9.466Z"/></svg>';
+   icon.innerHTML=isDark?sun:moon;
+  }
  });
 }
 function toggleTheme(){
@@ -46,9 +48,7 @@ document.querySelectorAll('.site-header').forEach(header=>{
   const icon=document.createElement('span');
   icon.className='theme-icon';
   icon.setAttribute('aria-hidden','true');
-  const label=document.createElement('span');
-  label.className='theme-label';
-  button.append(icon,label);
+  button.append(icon);
   button.addEventListener('click',toggleTheme);
   const locale=nav.querySelector('.lang-switch');
   if(locale)locale.before(button);else nav.append(button);
