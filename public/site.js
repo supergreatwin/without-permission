@@ -86,19 +86,37 @@ document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',a
 document.querySelectorAll('.embed-card').forEach(card=>{const btn=card.querySelector('.embed-button');const target=card.querySelector('.embed-target');if(!btn||!target)return;btn.hidden=false;btn.addEventListener('click',()=>{if(target.querySelector('iframe'))return;const player=card.dataset.player;if(!player||!/^https:\/\/www\.tiktok\.com\/player\//.test(player))return;const iframe=document.createElement('iframe');iframe.src=player.replace(/&amp;/g,'&');iframe.title=card.dataset.title||'TikTok post';iframe.loading='lazy';iframe.allow='fullscreen';iframe.referrerPolicy='strict-origin-when-cross-origin';target.append(iframe);btn.hidden=true;});});
 const newsletterEmbed=document.querySelector('[data-lang="'+language+'"] [data-beehiiv-embed]');
 if(newsletterEmbed){
+ const title=language==='ar'?'الاشتراك في نشرة على الهامش':'On the Margins newsletter signup';
  const loader=document.createElement('script');
  loader.src='https://subscribe-forms.beehiiv.com/v3/loader.js';
  loader.async=true;
  loader.dataset.beehiivForm=newsletterEmbed.dataset.beehiivEmbed;
+ let fallback;
+ const loadDirect=()=>{
+  if(newsletterEmbed.querySelector('iframe'))return;
+  const src=new URL('/v3/forms/'+encodeURIComponent(loader.dataset.beehiivForm),loader.src);
+  const referrer=new URL(location.pathname,location.origin);
+  src.searchParams.set('referrer',encodeURIComponent(referrer.href));
+  fallback=document.createElement('iframe');
+  fallback.src=src.href;
+  fallback.title=title;
+  fallback.className='newsletter-direct';
+  newsletterEmbed.append(fallback);
+ };
  const labelForm=new MutationObserver(()=>{
-  const form=newsletterEmbed.querySelector('iframe');
+  const form=[...newsletterEmbed.querySelectorAll('iframe')].find(frame=>frame!==fallback);
   if(!form)return;
-  form.title=language==='ar'?'الاشتراك في نشرة على الهامش':'On the Margins newsletter signup';
+  form.title=title;
+  fallback?.remove();
   labelForm.disconnect();
  });
  labelForm.observe(newsletterEmbed,{childList:true,subtree:true});
- loader.addEventListener('error',()=>labelForm.disconnect());
+ loader.addEventListener('error',()=>{
+  labelForm.disconnect();
+  loadDirect();
+ },{once:true});
  newsletterEmbed.append(loader);
+ window.setTimeout(loadDirect,4000);
 }
 const newsletterUrl=new URL(base);
 if(language==='en')newsletterUrl.searchParams.set('lang','en');
