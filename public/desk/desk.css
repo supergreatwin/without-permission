@@ -1,0 +1,29 @@
+.desk-header { border-bottom: 1px solid var(--line); }
+.desk-header .shell { display: flex; justify-content: space-between; align-items: center; padding-block: 1.2rem; }
+.desk { padding-block: 2rem 4rem; }
+.desk h1 { color: var(--wine); font-size: clamp(2.2rem,5vw,3.5rem); }
+.desk h2 { color: var(--wine); font-size: clamp(1.4rem,3vw,2.1rem); }
+.desk h3 { color: var(--wine); }
+.desk .row { display:flex; flex-wrap:wrap; align-items:center; gap:.7rem; }
+.desk nav.row { padding-block: 1rem; border-block: 1px solid var(--line); }
+.desk .panel { padding: clamp(1rem,3vw,2rem); margin-block-start:1rem; border:1px solid var(--line); background: var(--paper); }
+.desk .auth { max-width: 35rem; }
+.desk label { display: grid; gap:.3rem; font-weight:700; margin-block:.6rem; }
+.desk :is(input:not([type=checkbox]),textarea,select,.editor) { width:100%; min-width:0; padding:.55rem .7rem; font:inherit; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:0; }
+.desk .row > :is(input,select) { flex:1 1 10rem; width:auto; }
+.desk .btn { cursor:pointer; }
+.desk .btn:disabled { opacity:.6; cursor:wait; }
+.desk textarea, .desk .editor { min-height: 8rem; }
+.desk .article-text, .desk .editor { min-height: 18rem; line-height:1.85; }
+.desk .editor { font-weight:400; overflow-wrap:anywhere; }
+.desk #desk-status[data-error] { color: var(--rose); font-weight:700; }
+.desk .columns { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,23rem),1fr)); gap:1rem; }
+.desk .section-list { list-style:none; padding:0; }
+.desk .section-list > li { padding: .8rem 0; border-block-end:1px solid var(--line); overflow-wrap:anywhere; }
+.desk .table-scroll { overflow:auto; }
+.desk table { width:100%; border-collapse:collapse; }
+.desk :is(td,th) { min-width:90px; padding:.4rem .6rem; border-block-end:1px solid var(--line); text-align:start; }
+.desk .small { color:var(--muted); font-size:.88rem; }
+.desk .preview { max-width:48rem; overflow-wrap:anywhere; }
+.desk .preview img { max-width:100%; height:auto; }
+.desk details { margin-block:1rem; }

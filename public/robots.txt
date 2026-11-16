@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://supergreatwin.github.io/without-permission/sitemap.xml
