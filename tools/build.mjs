@@ -13,7 +13,11 @@ const supabaseUrl=process.env.SUPABASE_URL;
 const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY;
 const platformUrl=supabaseUrl && new URL("/functions/v1/platform",supabaseUrl).href;
 if(supabaseUrl && new URL(supabaseUrl).protocol!=="https:" && !fixture)throw new Error("Use an HTTPS Supabase origin");
-if(supabaseKey && !supabaseKey.startsWith("sb_publishable_")){
+if(supabaseKey?.startsWith("sb_publishable_")){
+  if(!/^sb_publishable_[A-Za-z0-9_-]{22}_[A-Za-z0-9_-]{8}$/.test(supabaseKey)){
+    throw new Error("SUPABASE_PUBLISHABLE_KEY must contain exactly one Supabase publishable key");
+  }
+} else if(supabaseKey){
   const claims=JSON.parse(Buffer.from(supabaseKey.split(".")[1]||"", "base64url").toString("utf8"));
   if(claims.role!=="anon")throw new Error("Only the existing anon or publishable key can be shipped to the browser");
 }

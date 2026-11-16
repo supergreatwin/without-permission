@@ -32,11 +32,23 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           WP_EXPORT_TOKEN: ${{ secrets.WP_EXPORT_TOKEN }}
           TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+      - name: Verify archive and protected desk export
+        run: node tools/verify-dist.mjs
+      - uses: actions/upload-artifact@v4
+        if: vars.WP_ENABLE_PAGES_DEPLOY != 'true'
+        with:
+          name: verified-pages-build
+          path: dist
+          include-hidden-files: true
+          retention-days: 3
       - uses: actions/configure-pages@v5
+        if: vars.WP_ENABLE_PAGES_DEPLOY == 'true'
       - uses: actions/upload-pages-artifact@v3
+        if: vars.WP_ENABLE_PAGES_DEPLOY == 'true' 
         with:
           path: dist
   deploy:
+    if: vars.WP_ENABLE_PAGES_DEPLOY == 'true'
     needs: build
     runs-on: ubuntu-latest
     environment:
