@@ -6,6 +6,13 @@ const path = (name) => new URL("../dist/" + name, import.meta.url);
 const inspect = async (name) => load(await readFile(path(name), "utf8"));
 const home = await inspect("index.html");
 assert.equal(home("[data-beehiiv-embed]").length,2);
+const socialImage="https://media.beehiiv.com/cdn-cgi/image/fit=scale-down,format=auto,onerror=redirect,quality=80/uploads/publication/thumbnail/7c5dd2ec-d1b7-4383-9692-6bc1c9a59b8a/without_permission_beehiiv_thumbnail_1200x630__4_.png";
+assert.equal(home('meta[property="og:image"]').attr("content"),socialImage,"Homepage must use branded publication artwork");
+assert.equal(home('meta[property="og:image:secure_url"]').attr("content"),socialImage);
+assert.equal(home('meta[name="twitter:image"]').attr("content"),socialImage);
+assert.equal(home('meta[property="og:image:width"]').attr("content"),"1200");
+assert.equal(home('meta[property="og:image:height"]').attr("content"),"630");
+
 assert.match(home(".manifesto h2").first().html(), /احنا مش<br>هنتكلم بصوت واطي/);
 const contribute = await inspect("contribute/index.html");
 assert.match(contribute("iframe.pitch-frame").attr("src"), /^https:\/\/tally\.so\/embed\/je61rx/);

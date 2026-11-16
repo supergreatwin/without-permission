@@ -28,6 +28,12 @@ for(const row of fixture.rows){
 const main=await readFile(new URL("index.html",source),"utf8");
 assert.match(main,/احنا مش<br>هنتكلم بصوت واطي/);
 assert.equal(load(main)("[data-beehiiv-embed]").length,2);
+const social=load(main);
+assert.equal(social('meta[property="og:image"]').attr("content"),"https://media.beehiiv.com/cdn-cgi/image/fit=scale-down,format=auto,onerror=redirect,quality=80/uploads/publication/thumbnail/7c5dd2ec-d1b7-4383-9692-6bc1c9a59b8a/without_permission_beehiiv_thumbnail_1200x630__4_.png");
+assert.equal(social('meta[name="twitter:image"]').attr("content"),"https://media.beehiiv.com/cdn-cgi/image/fit=scale-down,format=auto,onerror=redirect,quality=80/uploads/publication/thumbnail/7c5dd2ec-d1b7-4383-9692-6bc1c9a59b8a/without_permission_beehiiv_thumbnail_1200x630__4_.png");
+assert.equal(social('meta[property="og:image:width"]').attr("content"),"1200");
+assert.equal(social('meta[property="og:image:height"]').attr("content"),"630");
+
 const contribute=load(await readFile(new URL("contribute/index.html",source),"utf8"));
 assert.match(contribute("iframe.pitch-frame").attr("src"),/tally\.so\/embed\/je61rx/);
 

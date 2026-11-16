@@ -11,6 +11,8 @@ const checks = [
     ["Bilingual site", /data-lang="en"/],
     ["Beehiiv newsletter embed", /data-beehiiv-embed=/],
     ["Newsletter fallback", /withouts-newsletter\.beehiiv\.com\/subscribe/],
+    ["Branded Open Graph thumbnail", /<meta property="og:image" content="https:\/\/media\.beehiiv\.com\//],
+    ["Branded X/Twitter thumbnail", /<meta name="twitter:image" content="https:\/\/media\.beehiiv\.com\//],
   ]],
   ["contribute/", [
     ["Tally pitch embed", /tally\.so\/embed\/je61rx/],
