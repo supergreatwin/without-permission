@@ -130,3 +130,15 @@ html[lang=en] body{font-family:var(--latin);line-height:1.75}html[lang=en] :is(.
 :root[data-theme="dark"] .theme-toggle:hover{background:#53354B;border-color:#D79AB4}
 .mobile-panel .theme-toggle{inline-size:44px;block-size:44px;min-inline-size:44px;margin-top:12px}
 @media(prefers-reduced-motion:reduce){.theme-toggle{transition:none}}
+
+.newsletter-form { max-width: 34rem; }
+.newsletter-form iframe { display: block; max-width: 100%; }
+.form-fallback { display: inline-block; margin-block: 0.75rem 0; }
+.pitch-form { margin-block: 0 4.5rem; }
+.pitch-frame {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  color-scheme: light;
+}

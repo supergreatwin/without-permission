@@ -63,7 +63,7 @@ document.documentElement.lang=language==='en'?'en':'ar-EG';
 document.documentElement.dir=language==='en'?'ltr':'rtl';
 document.querySelectorAll('[data-lang]').forEach(el=>{el.hidden=el.dataset.lang!==language;});
 document.querySelectorAll('[data-title-ar]').forEach(el=>{document.title=el.dataset['title'+(language==='en'?'En':'Ar')];});if(language==='en'){const heading=document.querySelector('main [data-lang="en"] h1');if(heading)document.title=heading.textContent.replace(/\s+/g,' ').trim()+' | Without Permission';}
-document.querySelectorAll('.lang-switch').forEach(link=>{const u=new URL(location.href);if(language==='en')u.searchParams.delete('lang');else u.searchParams.set('lang','en');link.href=u.pathname+u.search+u.hash;});
+document.querySelectorAll('.lang-switch').forEach(link=>{const u=new URL(location.href);if(language==='en')u.searchParams.delete('lang');else u.searchParams.set('lang','en');if(u.hash==='#newsletter-'+language)u.hash='newsletter-'+(language==='en'?'ar':'en');link.href=u.pathname+u.search+u.hash;});
 document.querySelectorAll('a[href]').forEach(a=>{if(language!=='en'||a.classList.contains('lang-switch'))return;const href=a.getAttribute('href');if(!href||href.startsWith('#')||href.startsWith('mailto:')||href.startsWith('tel:'))return;try{const url=new URL(href,location.href);if(url.origin!==location.origin||!url.pathname.startsWith(base.pathname))return;url.searchParams.set('lang','en');a.href=url.pathname+url.search+url.hash;}catch{}});
 const old=decodeURIComponent(location.hash);
 if(location.pathname===base.pathname||/\/index\.html$/.test(location.pathname)&&location.pathname.replace(/index\.html$/,'')===base.pathname){
@@ -82,5 +82,30 @@ document.querySelectorAll('[data-collection]').forEach(s=>{const initial=params.
 document.querySelectorAll('.mobile-menu a').forEach(a=>a.addEventListener('click',()=>{const menu=a.closest('details');if(menu)menu.open=false;}));
 document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);b.textContent=language==='en'?'Link copied':'تم نسخ الرابط';}catch{b.textContent=language==='en'?'Copy address from browser':'انسخي الرابط من المتصفح';}}));
 document.querySelectorAll('.embed-card').forEach(card=>{const btn=card.querySelector('.embed-button');const target=card.querySelector('.embed-target');if(!btn||!target)return;btn.hidden=false;btn.addEventListener('click',()=>{if(target.querySelector('iframe'))return;const player=card.dataset.player;if(!player||!/^https:\/\/www\.tiktok\.com\/player\//.test(player))return;const iframe=document.createElement('iframe');iframe.src=player.replace(/&amp;/g,'&');iframe.title=card.dataset.title||'TikTok post';iframe.loading='lazy';iframe.allow='fullscreen';iframe.referrerPolicy='strict-origin-when-cross-origin';target.append(iframe);btn.hidden=true;});});
+const newsletterEmbed=document.querySelector('[data-lang="'+language+'"] [data-beehiiv-embed]');
+if(newsletterEmbed){
+ const loader=document.createElement('script');
+ loader.src='https://subscribe-forms.beehiiv.com/v3/loader.js';
+ loader.async=true;
+ loader.dataset.beehiivForm=newsletterEmbed.dataset.beehiivEmbed;
+ const labelForm=new MutationObserver(()=>{
+  const form=newsletterEmbed.querySelector('iframe');
+  if(!form)return;
+  form.title=language==='ar'?'الاشتراك في نشرة على الهامش':'On the Margins newsletter signup';
+  labelForm.disconnect();
+ });
+ labelForm.observe(newsletterEmbed,{childList:true,subtree:true});
+ loader.addEventListener('error',()=>labelForm.disconnect());
+ newsletterEmbed.append(loader);
+}
+const newsletterUrl=new URL(base);
+if(language==='en')newsletterUrl.searchParams.set('lang','en');
+newsletterUrl.hash='newsletter-'+language;
+document.querySelectorAll('.footer[data-lang="'+language+'"] nav').forEach(nav=>{
+ const link=document.createElement('a');
+ link.href=newsletterUrl.href;
+ link.textContent=language==='ar'?'النشرة البريدية':'Newsletter';
+ nav.append(link);
+});
 const dateEl=document.querySelector('[data-year]');if(dateEl)dateEl.textContent=String(new Date().getFullYear());
 })();
