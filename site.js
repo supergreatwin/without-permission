@@ -107,5 +107,17 @@ document.querySelectorAll('.footer[data-lang="'+language+'"] nav').forEach(nav=>
  link.textContent=language==='ar'?'النشرة البريدية':'Newsletter';
  nav.append(link);
 });
+/* Policy links available in every bilingual footer, including article/archive pages. */
+document.querySelectorAll('.footer nav').forEach(nav=>{
+ if(nav.querySelector('[data-policy-link]'))return;
+ const lang=nav.closest('.footer')?.dataset.lang==='en'?'en':'ar';
+ const url=new URL('policies/',base);
+ if(lang==='en')url.searchParams.set('lang','en');
+ const link=document.createElement('a');
+ link.href=url.href;
+ link.dataset.policyLink='';
+ link.textContent=lang==='en'?'Privacy & editorial policies':'الخصوصية وسياسات التحرير';
+ nav.append(link);
+});
 const dateEl=document.querySelector('[data-year]');if(dateEl)dateEl.textContent=String(new Date().getFullYear());
 })();
