@@ -4,8 +4,8 @@ The existing magazine stays on GitHub Pages. Supabase supplies the private edito
 
 ## Current release
 
-- The public homepage embeds a bilingual Beehiiv signup with email confirmation enabled. The Contribute page embeds the existing bilingual Tally form. Both have direct fallback links.
-- The editorial platform source is prepared for staging. The CMS, account emails, analytics, managed publishing and subscriber reporting still need a configured hosting project and staging acceptance tests before switching the public site to the new publishing workflow.
+- The public homepage embeds a bilingual Beehiiv signup form with confirmation enabled for the embed. The Contribute page embeds the bilingual Tally form. Both have direct fallback links. The public links, editorial policies, and recruitment pages are available in Arabic and English.
+- GitHub Pages serves the CMS build from the live Supabase project. Contributor self-registration stays disabled until SMTP and verification emails have passed acceptance testing. Tally handles public intake.
 
 ## Why this setup
 
@@ -70,15 +70,16 @@ The test suite runs migrations in a local PostgreSQL runtime with stand-ins for 
 
 5. In GitHub Actions, set repository variables `WP_SITE_URL`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY`. Set the `WP_EXPORT_TOKEN` repository secret. Add `TURNSTILE_SITE_KEY` as a variable only if CAPTCHA is enabled in Supabase Auth. Deploy the provided Pages workflow to staging first. Run `Publish Without Permission` and verify the build artifact. Once the staged site has passed the acceptance checks, switch production GitHub Pages to GitHub Actions, set the repository variable `WP_ENABLE_PAGES_DEPLOY` to `true`, and rerun the workflow. The scheduled workflow checks for eligible articles every 15 minutes. GitHub can queue or delay it, so an article should be considered publicly live once the deploy completes. The workflow also accepts a `without-permission-publish` repository dispatch if the team later sets up a push trigger.
 
-6. Run the acceptance checks below. In Supabase Cron or the SQL editor with the pg_cron extension enabled, schedule `select public.wp_cleanup();` daily so temporary counters and traffic detail expire. The acceptance run should confirm this job is scheduled.
+6. Run the acceptance checks below. Verify that the `without-permission-analytics-cleanup` job from migration 202611160005 is active in Supabase Cron. It expires temporary counters and old traffic detail daily.
 
 ## Editor and contributor instructions
 
 - A reader can verify an account, fill in a name or pen name, and send a private contributor application. An administrator approves the application or assigns an editorial role from **Accounts**. The Tally form on the public site remains available.
+- Staff open **Pitches**, follow the Tally submissions link and log each new submission by ID and working title. Assign a verified editor and a follow-up deadline. Move it through Received, Under review, Accepted, Editing and Published. For the last step, confirm the story is visible on the site and enter its path, such as `articles/lip-gloss/`. Contact details, pitch bodies and uploads stay in Tally.
 - A contributor opens **Articles**, creates a draft with a stable URL slug and edits either language. Use the toolbar for headings, emphasis, quotations and lists. Upload a cover or use one of your previous uploads. Add the public byline explicitly and preview both language editions. Saving creates a revision if the content changed. Drafts autosave after their URL has been entered.
 - Submit for review. An editor opens the submission, reviews it and requests changes where needed. The contributor sees the new status and the feedback in the desk. Notes and account details stay private.
 - An Editor-in-Chief or administrator approves a reviewed version, publishes it or selects a future local date and time. The dashboard stores the scheduled time as an absolute timestamp. The next successful site build publishes due articles. Only those roles can change homepage editor selections or unpublish. Earlier content appears in **Revision history** and restoring it creates a new revision.
-- **Analytics** shows views, estimated unique daily browser sessions, 30-second engaged article reads, referrer categories, language mix, publication activity and editorial throughput over 7, 30 or 90 days. Beehiiv reports appear after connecting its API. A conversion estimate appears only when site attribution and a usable denominator are available. Tally submissions remain in Tally and are excluded from the desk's contributor counts.
+- **Analytics** shows views, estimated unique daily browser sessions, 30-second engaged article reads, referrer categories, language mix, publication activity and editorial throughput over 7, 30 or 90 days. Beehiiv reports appear after connecting its API. A conversion estimate appears only when site attribution and a usable denominator are available. Tally submissions remain in Tally. The private pitch queue tracks the submissions that staff log.
 - The existing Beehiiv Manage preferences and Unsubscribe links remain the subscriber controls. For language and interest choices, set up matching custom fields in the publication's Preference Center and create segments from the chosen values. The static build provides `feed-ar.xml` and `feed-en.xml` for optional new-article notifications. Beehiiv RSS ingestion or scheduling depends on the account's features. Configure and test an opt-in segment before activating any publication notifications.
 
 ## Staging acceptance
@@ -93,7 +94,7 @@ Use controlled test accounts you own for all email flows.
 
 ## Backup and recovery
 
-- Keep the original static source, archive images, migrations and frontend sources in Git. The import migration seeds 31 RAW by Vee items and the long-form feature, retaining their original URLs, page HTML and assets. Migrated entries use the import date internally because publication timestamps are unavailable in some original pages. The seed is safe to reapply without overwriting existing edits.
+- Keep the original static source, archive images, migrations and frontend sources in Git. The import migration seeds 31 RAW by Vee items and the long-form feature, retaining their original URLs, page HTML and assets. The feature preserves the 32nd original TikTok post, 7707747618859879687. Migrated entries use the import date internally because publication timestamps are unavailable in some original pages. The seed is safe to reapply without overwriting existing edits.
 - Export the database to encrypted private storage regularly and copy private cover images separately. Supabase database dumps do not replace Storage backups. Verify recovery in an isolated project before using a backup for production.
 - To reverse a Pages release, switch its publishing source back to the existing main-branch site or redeploy the last known-good artifact. Back up the database and image storage first. A Pages rollback does not rewind the private editorial data.
 - Public traffic uses a tab-lifetime random identifier, hashed with a daily server secret derived from the configured secret, and honors Do Not Track and Global Privacy Control. No raw IP address or full referrer is stored in the site database. The hosting provider's own access logs follow its policies. Apply the included cleanup job for 95-day detail retention.

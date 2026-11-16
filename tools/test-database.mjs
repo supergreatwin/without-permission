@@ -119,4 +119,32 @@ await db.exec(await readFile(new URL("../supabase/migrations/202611160003_archiv
 assert.equal(await value("select count(*)::int as value from wp_live where passthrough"),32);
 await db.exec(await readFile(new URL("../supabase/migrations/202611160003_archive.sql",import.meta.url),"utf8"));
 assert.equal(await value("select count(*)::int as value from wp_live where passthrough"),32);
+await db.exec(await readFile(new URL("../supabase/migrations/202611160004_pitch_review.sql",import.meta.url),"utf8"));
+const savePitch=(pitch,state,route="",owner=identity(2))=>value(
+  "select to_jsonb(wp_save_pitch($1,$2,'sample-tally-id','Test pitch',$3,$4,'2026-12-01','Internal note',$5)) as value",
+  [pitch?.id??null,pitch?.version??null,state,owner,route],
+);
+await role(2);
+await assert.rejects(savePitch(null,"published","articles/lip-gloss/"),/start in Received/);
+await assert.rejects(savePitch(null,"received","",identity(1)),/verified editorial owner/);
+const received=await savePitch(null,"received");
+assert.equal(received.state,"received");
+await assert.rejects(savePitch(null,"received"),/duplicate key/);
+await assert.rejects(savePitch(received,"accepted"),/transition is unavailable/);
+await role(1);
+assert.equal(await value("select count(*)::int as value from wp_pitches"),0);
+await assert.rejects(savePitch(received,"in_review"),/Staff access required/);
+await role(0,"anon");
+await assert.rejects(db.query("select * from wp_pitches"),/permission denied/);
+await role(3);
+const review=await savePitch(received,"in_review");
+await assert.rejects(savePitch(received,"in_review"),/pitch changed/);
+const accepted=await savePitch(review,"accepted");
+const editing=await savePitch(accepted,"editing");
+await assert.rejects(savePitch(editing,"published","articles/test-story/"),/Enter a published article/);
+const published=await savePitch(editing,"published","articles/lip-gloss/");
+assert.equal(published.state,"published");
+assert.ok(published.article_id);
+assert.equal(await value("select count(*)::int as value from wp_audit where action='pitch_review'"),5);
+console.log("Verified private Tally pitch intake, assignment, concurrent edits, and publishing transitions.");
 await db.close();
