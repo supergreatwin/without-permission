@@ -22,6 +22,16 @@ const statusNames = {
   application_declined:t("طلب المساهمة اترفض","Application declined"), application:t("طلب مساهمة","Application"),
   edit:t("تعديل","Edit"), restored:t("استعادة نسخة","Revision restored"), role_changed:t("تغيير الصلاحية","Role changed"),
   ownership:t("تغيير مسؤولية المقال","Article ownership changed"),
+  pitch_review:t("تحديث مراجعة فكرة","Pitch review updated"),
+};
+const pitchStates={
+  received:t("وصلت","Received"), in_review:t("قيد المراجعة","Under review"),
+  accepted:t("اتقبلت","Accepted"), editing:t("قيد التحرير","Editing"),
+  published:t("اتنشرت","Published"), declined:t("اعتذرنا عنها","Declined"),
+};
+const pitchNext={
+  received:["in_review","declined"], in_review:["accepted","declined"],
+  accepted:["editing"], editing:["published"], published:[], declined:["in_review"],
 };
 const roleNames = {
   admin:t("مدير","Administrator"), chief:t("رئيس التحرير","Editor-in-Chief"),
@@ -167,7 +177,7 @@ async function show() {
     ...(profile.role==="reader"?[["apply",t("طلب مساهمة","Contribute")]]:[["articles",t("المقالات","Articles")]]),
     ["inbox",t("الإشعارات","Notifications")+` (${inbox.filter(item=>!item.read_at).length})`],
     ["profile",t("الملف الشخصي","Profile")],
-    ...(staff()?[["analytics",t("الإحصائيات","Analytics")],["audit",t("سجل التحرير","Audit log")]]:[]),
+    ...(staff()?[["pitches",t("الأفكار الواردة","Pitches")],["analytics",t("الإحصائيات","Analytics")],["audit",t("سجل التحرير","Audit log")]]:[]),
     ...(profile.role==="admin"?[["accounts",t("الحسابات","Accounts")]]:[]),
   ];
   if(!options.some(([key])=>key===tab))tab=options[0][0];
@@ -186,11 +196,77 @@ async function show() {
   root.replaceChildren(element("p",{className:"small"},[profile.pen_name||profile.display_name,roleNames[profile.role]].filter(Boolean).join(" · ")),menu,section);
   if(tab==="apply")await application(section);
   if(tab==="articles")await articleList(section);
+  if(tab==="pitches")await pitches(section);
   if(tab==="profile")profileForm(section);
   if(tab==="inbox")await notifications(section);
   if(tab==="accounts")await accounts(section);
   if(tab==="audit")await audit(section);
   if(tab==="analytics")await analytics(section);
+}
+
+async function pitches(parent) {
+  const owners=await rpc("pitch_owners");
+  const list=element("div");
+  const filter=select([["active",t("الأفكار المفتوحة","Open pitches")],...Object.entries(pitchStates)]);
+  const editor=element("div");
+  const formFor=(pitch)=>{
+    const id=element("input",{required:true,readOnly:!!pitch,value:pitch?.tally_id||"",maxLength:100});
+    const title=element("input",{required:true,maxLength:180,value:pitch?.title||"",dir:"auto"});
+    const owner=select([["",t("اختاري محرر","Choose an editor")],...owners.map(item=>[item.id,item.label])],
+      pitch?pitch.owner_id:profile.id);
+    owner.required=true;
+    const state=pitch?.state||"received";
+    const phase=select([state,...(pitch?pitchNext[state]:[])].map(key=>[key,pitchStates[key]]),state);
+    const deadline=element("input",{type:"date",value:pitch?.deadline||""});
+    const note=element("textarea",{maxLength:1500,dir:"auto",value:pitch?.note||""});
+    const route=element("input",{value:pitch?.article?.route||"",placeholder:"articles/story-slug/",dir:"ltr"});
+    const routeField=field(t("مسار المقال المنشور","Published article path"),route);
+    const updateRoute=()=>{
+      routeField.hidden=phase.value!=="published";
+      route.required=!routeField.hidden;
+    };
+    phase.addEventListener("change",updateRoute);
+    updateRoute();
+    const submit=element("button",{type:"submit",className:"btn"},t("حفظ الفكرة","Save pitch"));
+    const form=element("form",{},field(t("معرّف الإرسال في Tally","Tally submission ID"),id),
+      field(t("عنوان الفكرة","Working title"),title),
+      element("div",{className:"columns"},field(t("المحرر المسؤول","Assigned editor"),owner),
+        field(t("موعد المتابعة","Follow-up deadline"),deadline),field(t("الحالة","Status"),phase)),
+      field(t("ملاحظات التحرير","Editorial notes"),note),routeField,submit);
+    form.addEventListener("submit",async(event)=>{
+      event.preventDefault();
+      submit.disabled=true;
+      try {
+        await rpc("save_pitch",{_id:pitch?.id??null,_version:pitch?.version??null,_tally_id:id.value,
+          _title:title.value,_state:phase.value,_owner:owner.value,_deadline:deadline.value||null,
+          _note:note.value,_article_route:route.value});
+        editor.replaceChildren(formFor(null));
+        await refresh();
+        message(t("تم حفظ الفكرة.","Pitch saved."));
+      } catch(error) { message(error.message,true); }
+      finally { submit.disabled=false; }
+    });
+    return panel(pitch?t("تعديل الفكرة","Edit pitch"):t("تسجيل فكرة من Tally","Log a Tally pitch"),form);
+  };
+  const refresh=async()=>{
+    const query=client.from("wp_pitches").select("*,article:wp_articles(route)")
+      .order("deadline",{nullsFirst:false}).order("updated_at",{ascending:false}).limit(100);
+    const rows=await result(filter.value==="active"?query.in("state",["received","in_review","accepted","editing"]):query.eq("state",filter.value));
+    list.replaceChildren(rows.length?element("ul",{className:"section-list"},rows.map(pitch=>element("li",{},
+      element("strong",{dir:"auto"},pitch.title)," · ",pitchStates[pitch.state]," · ",
+      owners.find(item=>item.id===pitch.owner_id)?.label||t("من غير مسؤول","Unassigned"),
+      pitch.deadline?" · "+pitch.deadline:"",
+      " ",button(t("فتح","Open"),()=>{editor.replaceChildren(formFor(pitch));editor.querySelector("input")?.focus();})
+    ))):element("p",{},t("مفيش أفكار بالحالة دي.","No pitches in this view.")));
+  };
+  filter.addEventListener("change",()=>refresh().catch(error=>message(error.message,true)));
+  parent.append(panel(t("مراجعة الأفكار","Pitch review"),
+    element("p",{},element("a",{href:"https://tally.so/forms/je61rx/submissions",target:"_blank",rel:"noopener noreferrer",className:"text-link"},
+      t("افتحي إرساليات Tally","Open Tally submissions"))),
+    element("p",{},t("سجّلي معرّف الإرسال والعنوان. خَلّي الإيميل والمرفقات في Tally.","Log the submission ID and title here. Keep contact details and attachments in Tally.")),
+    field(t("عرض حسب الحالة","Filter by status"),filter),list),editor);
+  editor.replaceChildren(formFor(null));
+  await refresh();
 }
 
 function profileForm(parent) {
