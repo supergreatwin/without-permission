@@ -31,6 +31,7 @@ jobs:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           WP_EXPORT_TOKEN: ${{ secrets.WP_EXPORT_TOKEN }}
+          WP_PUBLIC_REGISTRATION: ${{ vars.WP_PUBLIC_REGISTRATION }}
           TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
       - name: Verify archive and protected desk export
         run: node tools/verify-dist.mjs
@@ -44,7 +45,7 @@ jobs:
       - uses: actions/configure-pages@v5
         if: vars.WP_ENABLE_PAGES_DEPLOY == 'true'
       - uses: actions/upload-pages-artifact@v3
-        if: vars.WP_ENABLE_PAGES_DEPLOY == 'true' 
+        if: vars.WP_ENABLE_PAGES_DEPLOY == 'true'
         with:
           path: dist
   deploy:

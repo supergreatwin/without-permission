@@ -78,6 +78,7 @@ const rpc = (name, params) => result(client.rpc("wp_"+name,params));
 function authView(mode = "login") {
   root.replaceChildren();
   if(recovery)mode="recover";
+  if(mode==="signup" && !conf.publicRegistration)mode="login";
   const submitGuard=localStorage.getItem("wp-reset-pending");
   const email=element("input",{type:"email",required:true,autocomplete:"email",maxLength:254});
   const password=element("input",{type:"password",required:true,minLength:12,autocomplete:mode==="login"?"current-password":"new-password"});
@@ -121,10 +122,14 @@ function authView(mode = "login") {
   });
   const switcher=element("div",{className:"row"},
     mode!=="login" && mode!=="recover"?button(authLabels.login,()=>authView()):null,
-    mode!=="signup" && mode!=="recover"?button(authLabels.signup,()=>authView("signup")):null,
+    conf.publicRegistration && mode!=="signup" && mode!=="recover"?button(authLabels.signup,()=>authView("signup")):null,
     mode!=="reset" && mode!=="recover"?button(t("نسيت كلمة السر؟","Forgot password?"),()=>authView("reset")):null,
   );
-  const main=panel(authLabels[mode],form,switcher);
+  const pitch=mode==="login" && !conf.publicRegistration ? element("p",{},
+    t("لو حابة تكتبي معانا، ","New contributors can "),
+    element("a",{href:"../contribute/"+(english?"?lang=en":""),className:"text-link"},
+      t("ابعتي فكرة عن طريق استمارة المساهمات","send a pitch through the contribution form")),".") : null;
+  const main=panel(authLabels[mode],form,switcher,pitch);
   main.classList.add("auth");
   root.append(main);
   if(submitGuard==="true" && mode==="login")message(t("افتحي رابط الاستعادة من بريدك.","Open the recovery link from your inbox."));

@@ -35,7 +35,7 @@ if(!Array.isArray(exported.rows)||exported.rows.filter(row=>/^archive\/\d{16,22}
 
 await rm(target,{recursive:true,force:true});
 await cp(template,target,{recursive:true});
-const config={siteUrl:site,supabaseUrl,supabaseKey,platformUrl,captchaSiteKey:process.env.TURNSTILE_SITE_KEY};
+const config={siteUrl:site,supabaseUrl,supabaseKey,platformUrl,captchaSiteKey:process.env.TURNSTILE_SITE_KEY,publicRegistration:process.env.WP_PUBLIC_REGISTRATION==="true"};
 await writeFile(join(target,"desk/config.js"),"window.wpConfig=Object.freeze("+JSON.stringify(config)+");\n");
 await build({entryPoints:["frontend/desk.mjs"],outfile:join(target,"desk/desk.js"),bundle:true,platform:"browser",format:"iife",target:"es2022", minify:true});
 await cp("frontend/traffic.mjs",join(target,"traffic.js"));

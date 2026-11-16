@@ -22,7 +22,7 @@ assert.ok((await stat(path("desk/desk.js"))).size>10000);
 const config=await readFile(path("desk/config.js"),"utf8");
 const publicConfig=JSON.parse(config.match(/Object\.freeze\((\{.*\})\)/s)?.[1]??"null");
 assert.ok(publicConfig);
-assert.ok(Object.keys(publicConfig).every(key=>["siteUrl","supabaseUrl","supabaseKey","platformUrl","captchaSiteKey"].includes(key)));
+assert.ok(Object.keys(publicConfig).every(key=>["siteUrl","supabaseUrl","supabaseKey","platformUrl","captchaSiteKey","publicRegistration"].includes(key)));
 if(publicConfig.supabaseKey){
   assert.match(publicConfig.supabaseKey,/^sb_publishable_[A-Za-z0-9_-]+$|^eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   assert.equal(new URL(publicConfig.platformUrl).origin,new URL(publicConfig.supabaseUrl).origin);
