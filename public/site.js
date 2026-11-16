@@ -66,10 +66,11 @@ document.querySelectorAll('[data-lang]').forEach(el=>{el.hidden=el.dataset.lang!
 document.querySelectorAll('[data-title-ar]').forEach(el=>{document.title=el.dataset['title'+(language==='en'?'En':'Ar')];});if(language==='en' && !document.body.dataset.defaultLang){const heading=document.querySelector('main [data-lang="en"] h1');if(heading)document.title=heading.textContent.replace(/\s+/g,' ').trim()+' | Without Permission';}
 document.querySelectorAll('.lang-switch').forEach(link=>{const u=new URL(location.href);if(language==='en'){if(document.body.dataset.defaultLang==='en')u.searchParams.set('lang','ar');else u.searchParams.delete('lang');}else u.searchParams.set('lang','en');if(u.hash==='#newsletter-'+language)u.hash='newsletter-'+(language==='en'?'ar':'en');link.href=u.pathname+u.search+u.hash;});
 document.querySelectorAll('a[href]').forEach(a=>{if(language!=='en'||a.classList.contains('lang-switch'))return;const href=a.getAttribute('href');if(!href||href.startsWith('#')||href.startsWith('mailto:')||href.startsWith('tel:'))return;try{const url=new URL(href,location.href);if(url.origin!==location.origin||!url.pathname.startsWith(base.pathname))return;url.searchParams.set('lang','en');a.href=url.pathname+url.search+url.hash;}catch{}});
-const old=decodeURIComponent(location.hash);
+let old=location.hash;
+try{old=decodeURIComponent(old);}catch{}
 if(location.pathname===base.pathname||/\/index\.html$/.test(location.pathname)&&location.pathname.replace(/index\.html$/,'')===base.pathname){
 const r=old.match(/^#(?:post-|raw-)(\d{16,22})$/);
-const target=r?'archive/'+r[1]+'/':old==='#lip-gloss'?'articles/lip-gloss/':old==='#raw-archive'?'archive/':old==='#articles'?'stories/':old==='#about'?'about/':'';
+const target=r&&r[1]!=='7707747618859879687'?'archive/'+r[1]+'/':r||old==='#lip-gloss'?'articles/lip-gloss/':old==='#raw-archive'?'archive/':old==='#articles'?'stories/':old==='#about'?'about/':'';
 if(target){const u=new URL(target,base);if(language==='en')u.searchParams.set('lang','en');history.replaceState(null,'',u.href);location.replace(u.href);return;}
 }
 function updateCollection(section){

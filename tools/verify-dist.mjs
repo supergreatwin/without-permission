@@ -9,6 +9,15 @@ assert.equal(home("[data-beehiiv-embed]").length,2);
 assert.match(home(".manifesto h2").first().html(), /احنا مش<br>هنتكلم بصوت واطي/);
 const contribute = await inspect("contribute/index.html");
 assert.match(contribute("iframe.pitch-frame").attr("src"), /^https:\/\/tally\.so\/embed\/je61rx/);
+for(const route of ["links","policies","recruit"]){
+  const page=await inspect(`${route}/index.html`);
+  assert.equal(page("main h1").length,2);
+  assert.equal(home(`.footer nav a[href="./${route}/"]`).length,1);
+}
+const feature=await inspect("articles/lip-gloss/en/index.html");
+assert.equal(feature("html").attr("lang"),"en");
+assert.match(feature('link[rel="canonical"]').attr("href"),/\/articles\/lip-gloss\/en\/$/);
+assert.equal(JSON.parse(feature('script[type="application/ld+json"]').text()).inLanguage,"en");
 const archive = (await readdir(path("archive/"),{withFileTypes:true}))
   .filter((entry) => entry.isDirectory() && /^\d{16,22}$/.test(entry.name));
 assert.equal(archive.length,31);
