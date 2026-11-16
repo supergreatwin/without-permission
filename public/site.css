@@ -142,3 +142,8 @@ html[lang=en] body{font-family:var(--latin);line-height:1.75}html[lang=en] :is(.
   background: #fff;
   color-scheme: light;
 }
+
+.page-content { padding-block: clamp(2rem, 5vw, 4rem); }
+.publication-links a { display: inline-block; padding-block: .35rem; }
+.archive-note { margin-block: 1.4rem 0; }
+.pitch-policy { width: var(--page); margin: 1.4rem auto 0; }

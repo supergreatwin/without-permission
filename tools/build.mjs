@@ -63,10 +63,27 @@ for(const [path,signed] of Object.entries(exported.assets)){
 }
 
 const rows=exported.rows.sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
+const publicPages=["links/","policies/","recruit/"];
 for(const row of rows){
   if(!articleRoute.test(row.route))throw new Error("Unexpected article route");
   if(row.passthrough && row.visible){
     await access(join(target,row.route,"index.html"));
+    if(row.route==="articles/lip-gloss/"){
+      const english=join(target,row.route,"en","index.html");
+      const page=load(shell);
+      for(const node of page("[href],[src]").toArray()){
+        for(const attr of ["href","src"]){
+          const url=page(node).attr(attr);
+          if(url?.startsWith("../../"))page(node).attr(attr,"../"+url);
+        }
+      }
+      page("html").attr({lang:"en",dir:"ltr"});
+      page("body").attr("data-default-lang","en");
+      page('[data-lang="ar"]').attr("hidden","");
+      page('[data-lang="en"]').removeAttr("hidden");
+      await mkdir(dirname(english),{recursive:true});
+      await writeFile(english,page.html());
+    }
     continue;
   }
   const ownShell=row.route.startsWith("archive/")?await readFile(join(template,row.route,"index.html"),"utf8"):shell;
@@ -88,7 +105,13 @@ if(rows.some(row=>!row.passthrough || !row.visible)){
 
 const xml=(text)=>String(text).replace(/[<>&"']/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&apos;"})[c]);
 const sitemap=join(target,"sitemap.xml");
-let oldMap=await readFile(sitemap,"utf8");
+const previousSite="https://supergreatwin.github.io/without-permission/";
+let oldMap=(await readFile(sitemap,"utf8")).replaceAll(previousSite,site);
+const extraPages=[...publicPages];
+if(rows.some(row=>row.visible && row.passthrough && row.route==="articles/lip-gloss/")){
+  extraPages.push("articles/lip-gloss/en/");
+}
+oldMap=oldMap.replace("</urlset>",extraPages.map(route=>`  <url><loc>${xml(site+route)}</loc></url>\n`).join("")+"</urlset>");
 for(const row of rows.filter(row=>!row.passthrough || !row.visible)){
   const base=site+row.route;
   oldMap=oldMap.replace(/<url>\s*<loc>(.*?)<\/loc>[\s\S]*?<\/url>/g,(match,loc)=>loc===base?"":match);
@@ -105,30 +128,77 @@ for(const lang of ["ar","en"]){
     row.payload.editions[lang]?.title && row.payload.editions[lang]?.body).slice(0,40);
   const items=articles.map(row=>{
     const e=selected(row,lang);
-    const url=site+row.route+(lang==="en"?(row.passthrough?"?lang=en":"en/"):"");
+    const url=site+row.route+(lang==="en"?"en/":"");
     return `<item><title>${xml(e.title)}</title><link>${xml(url)}</link><guid>${xml(url)}</guid><description>${xml(e.description)}</description><pubDate>${new Date(row.published_at).toUTCString()}</pubDate></item>`;
   });
   const name=lang==="ar"?"من غير إذن":"Without Permission";
   await writeFile(join(target,`feed-${lang}.xml`),`<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>${name}</title><link>${xml(site)}</link><description>${name}</description><language>${lang}</language>${items.join("\n")}</channel></rss>\n`);
 }
 
-if(!fixture){
-  const files=await readdir(target,{recursive:true});
-  for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.startsWith("desk"+sep))){
-    const file=join(target,filename);
-    const html=await readFile(file,"utf8");
-    const $=load(html);
-    const prefix="../".repeat(filename.split(sep).length-1)||"./";
-    for(const nav of $(".footer nav").toArray()){
-      const en=$(nav).closest("footer").attr("data-lang")==="en";
-      const href=prefix+"desk/"+(en?"?lang=en":"");
-      $(nav).append(`<a href="${href}">${en?"Editorial desk":"مكتب التحرير"}</a>`);
+const files=await readdir(target,{recursive:true});
+const byRoute=new Map(rows.map(row=>[row.route,row]));
+for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.startsWith("desk"+sep))){
+  const file=join(target,filename);
+  const $=load(await readFile(file,"utf8"));
+  const prefix="../".repeat(filename.split(sep).length-1)||"./";
+  const route=filename.split(sep).join("/").replace(/index\.html$/,"");
+  const canonical=site+route;
+  $('link[rel="canonical"]').attr("href",canonical);
+  $('meta[property="og:url"]').attr("content",canonical);
+  const image=$('meta[property="og:image"]');
+  const imageUrl=image.attr("content");
+  if(imageUrl?.startsWith(previousSite))image.attr("content",site+imageUrl.slice(previousSite.length));
+  const english=route.endsWith("/en/");
+  const articleRoute=english?route.slice(0,-3):route;
+  const row=byRoute.get(articleRoute);
+  if(row?.visible){
+    const lang=english?"en":"ar";
+    const edition=selected(row,lang);
+    const heading=edition.seoTitle||edition.title;
+    const deck=edition.seoDescription||edition.description;
+    if(english){
+      $("title").text(edition.title+" | Without Permission");
+      $('meta[property="og:title"]').attr("content",heading);
+      $('meta[name="description"],meta[property="og:description"]').attr("content",deck);
     }
-    $("body").append(`<script src="${prefix}desk/config.js" defer></script><script src="${prefix}traffic.js" defer></script>`);
-    if(filename==="index.html"){
-      $("head").append('<link rel="alternate" type="application/rss+xml" href="./feed-ar.xml" title="من غير إذن"><link rel="alternate" type="application/rss+xml" href="./feed-en.xml" title="Without Permission">');
+    if(articleRoute==="articles/lip-gloss/" && row.passthrough){
+      $("head").append(`<link rel="alternate" hreflang="ar" href="${xml(site+articleRoute)}"><link rel="alternate" hreflang="en" href="${xml(site+articleRoute+"en/")}">`);
     }
-    await writeFile(file,$.html());
+    const metadata={
+      "@context":"https://schema.org",
+      "@type":articleRoute.startsWith("archive/")?"Article":"BlogPosting",
+      url:canonical,
+      headline:edition.title,
+      description:deck||undefined,
+      inLanguage:english?"en":"ar-EG",
+      image:image.attr("content"),
+      author:row.payload.byline?{"@type":"Person",name:row.payload.byline}:undefined,
+      publisher:{"@type":"Organization",name:"Without Permission",url:site},
+      datePublished:row.passthrough?undefined:row.published_at,
+      dateModified:row.passthrough?undefined:row.updated_at,
+    };
+    $("head").append('<script type="application/ld+json">'+JSON.stringify(metadata).replaceAll("<","\\u003c")+"</script>");
   }
+  for(const nav of $(".footer nav").toArray()){
+    const en=$(nav).closest("footer").attr("data-lang")==="en";
+    const links=[
+      ["links/",en?"All links":"كل روابطنا"],
+      ["policies/",en?"Editorial policies":"سياسات التحرير"],
+      ["recruit/",en?"Join the team":"انضمي للفريق"],
+    ];
+    if(!fixture)links.push(["desk/",en?"Editorial desk":"مكتب التحرير"]);
+    for(const [path,label] of links){
+      $(nav).append(`<a href="${prefix+path+(en?"?lang=en":"")}">${label}</a>`);
+    }
+  }
+  if(!fixture){
+    $("body").append(`<script src="${prefix}desk/config.js" defer></script><script src="${prefix}traffic.js" defer></script>`);
+  }
+  if(filename==="index.html"){
+    $("head").append('<link rel="alternate" type="application/rss+xml" href="./feed-ar.xml" title="من غير إذن"><link rel="alternate" type="application/rss+xml" href="./feed-en.xml" title="Without Permission">');
+  }
+  await writeFile(file,$.html());
 }
+const robots=join(target,"robots.txt");
+await writeFile(robots,(await readFile(robots,"utf8")).replaceAll(previousSite,site));
 console.log(`Built ${rows.filter(r=>r.visible).length} public article routes (including the RAW by Vee archive).`);
