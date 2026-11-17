@@ -84,5 +84,27 @@ results.forEach((r,i)=>{
   if(r.status==="fulfilled")console.log("PASS",path);
   else{failed++; console.error("FAIL",path,r.reason.message);}
 });
+// Validate the published listing against the deployed sitemap, not only static fixture routes.
+try {
+  const [sitemapXml, storiesHtml] = await Promise.all([
+    readDeployed("sitemap.xml"), readDeployed("stories/"),
+  ]);
+  const routes = [...new Set([...sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+    .map((match) => new URL(match[1]).pathname.match(/\/articles\/([a-z0-9]+(?:-[a-z0-9]+)*)\/$/)?.[1])
+    .filter(Boolean).map((slug) => `articles/${slug}/`))];
+  assert.ok(routes.length, "Sitemap contains no published articles");
+  for (const route of routes) {
+    assert.ok(storiesHtml.includes(`href="../${route}"`),
+      `Published article ${route} is missing from the live Stories page`);
+    const html = await readDeployed(route);
+    assert.match(html, /<article\b/, `Live article ${route} has no body`);
+    assert.doesNotMatch(html, /<meta name="robots" content="noindex/,
+      `Live article ${route} is unexpectedly marked noindex`);
+  }
+  console.log(`PASS published Stories listing (${routes.length} public articles)`);
+} catch(error) {
+  failed++;
+  console.error("FAIL published Stories listing:", error.message);
+}
 if(failed)process.exitCode=1;
 else console.log(`Public deployment passed ${checks.length} checks at ${base.origin}${base.pathname}`);
