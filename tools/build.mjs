@@ -9,6 +9,7 @@ const target=resolve("dist");
 const template=resolve("public");
 const fixture=process.argv.includes("--fixture");
 const site=process.env.WP_SITE_URL ?? "https://supergreatwin.github.io/without-permission/";
+const canonicalSite="https://without-permission.pages.dev/";
 if(!new URL(site).pathname.endsWith("/"))throw new Error("WP_SITE_URL requires a trailing slash");
 const supabaseUrl=process.env.SUPABASE_URL;
 const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -116,14 +117,14 @@ if(rows.some(row=>!row.passthrough || !row.visible)){
 const xml=(text)=>String(text).replace(/[<>&"']/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&apos;"})[c]);
 const sitemap=join(target,"sitemap.xml");
 const previousSite="https://supergreatwin.github.io/without-permission/";
-let oldMap=(await readFile(sitemap,"utf8")).replaceAll(previousSite,site);
+let oldMap=(await readFile(sitemap,"utf8")).replaceAll(previousSite,canonicalSite);
 const extraPages=[...publicPages];
 if(rows.some(row=>row.visible && row.passthrough && row.route==="articles/lip-gloss/")){
   extraPages.push("articles/lip-gloss/en/");
 }
-oldMap=oldMap.replace("</urlset>",extraPages.map(route=>`  <url><loc>${xml(site+route)}</loc></url>\n`).join("")+"</urlset>");
+oldMap=oldMap.replace("</urlset>",extraPages.map(route=>`  <url><loc>${xml(canonicalSite+route)}</loc></url>\n`).join("")+"</urlset>");
 for(const row of rows.filter(row=>!row.passthrough || !row.visible)){
-  const base=site+row.route;
+  const base=canonicalSite+row.route;
   oldMap=oldMap.replace(/<url>\s*<loc>(.*?)<\/loc>[\s\S]*?<\/url>/g,(match,loc)=>loc===base?"":match);
   if(row.visible){
     const date=new Date(row.updated_at||row.published_at).toISOString().slice(0,10);
@@ -152,12 +153,21 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
   const $=load(await readFile(file,"utf8"));
   const prefix="../".repeat(filename.split(sep).length-1)||"./";
   const route=filename.split(sep).join("/").replace(/index\.html$/,"");
-  const canonical=site+route;
+  const canonical=canonicalSite+route;
+  if (!$('link[rel="canonical"]').length) $("head").append('<link rel="canonical">');
   $('link[rel="canonical"]').attr("href",canonical);
   $('meta[property="og:url"]').attr("content",canonical);
   const image=$('meta[property="og:image"]');
   const imageUrl=image.attr("content");
-  if(imageUrl?.startsWith(previousSite))image.attr("content",site+imageUrl.slice(previousSite.length));
+  if(imageUrl){
+    const imagePath = new URL(imageUrl, site);
+    for (const base of [site, previousSite]) {
+      if(imagePath.href.startsWith(base)) {
+        image.attr("content",canonicalSite+imagePath.href.slice(base.length));
+        break;
+      }
+    }
+  }
   const english=route.endsWith("/en/");
   const articleRoute=english?route.slice(0,-3):route;
   const row=byRoute.get(articleRoute);
@@ -171,8 +181,11 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
       $('meta[property="og:title"]').attr("content",heading);
       $('meta[name="description"],meta[property="og:description"]').attr("content",deck);
     }
-    if(articleRoute==="articles/lip-gloss/" && row.passthrough){
-      $("head").append(`<link rel="alternate" hreflang="ar" href="${xml(site+articleRoute)}"><link rel="alternate" hreflang="en" href="${xml(site+articleRoute+"en/")}">`);
+    $('link[hreflang]').remove();
+    if((row.passthrough && articleRoute==="articles/lip-gloss/") || (!row.passthrough && row.payload.editions.en?.title && row.payload.editions.en?.body)){
+      const arUrl=xml(canonicalSite+articleRoute);
+      const enUrl=arUrl+"en/";
+      $("head").append(`<link rel="alternate" hreflang="ar" href="${arUrl}"><link rel="alternate" hreflang="en" href="${enUrl}"><link rel="alternate" hreflang="x-default" href="${arUrl}">`);
     }
     const metadata={
       "@context":"https://schema.org",
@@ -183,7 +196,7 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
       inLanguage:english?"en":"ar-EG",
       image:image.attr("content"),
       author:row.payload.byline?{"@type":"Person",name:row.payload.byline}:undefined,
-      publisher:{"@type":"Organization",name:"Without Permission",url:site},
+      publisher:{"@type":"Organization",name:"Without Permission",url:canonicalSite},
       datePublished:row.passthrough?undefined:row.published_at,
       dateModified:row.passthrough?undefined:row.updated_at,
     };
@@ -205,10 +218,12 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
     $("body").append(`<script src="${prefix}desk/config.js" defer></script><script src="${prefix}traffic.js" defer></script>`);
   }
   if(filename==="index.html"){
+    const publication={"@context":"https://schema.org","@type":"WebSite",name:"من غير إذن",alternateName:"Without Permission",url:canonicalSite,inLanguage:["ar-EG","en"]};
+    $("head").append('<script type="application/ld+json">'+JSON.stringify(publication)+'</script>');
     $("head").append('<link rel="alternate" type="application/rss+xml" href="./feed-ar.xml" title="من غير إذن"><link rel="alternate" type="application/rss+xml" href="./feed-en.xml" title="Without Permission">');
   }
   await writeFile(file,$.html());
 }
 const robots=join(target,"robots.txt");
-await writeFile(robots,(await readFile(robots,"utf8")).replaceAll(previousSite,site));
+await writeFile(robots,(await readFile(robots,"utf8")).replaceAll(previousSite,canonicalSite));
 console.log(`Built ${rows.filter(r=>r.visible).length} public article routes (including the RAW by Vee archive).`);
