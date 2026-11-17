@@ -1,15 +1,15 @@
 # Without Permission editorial platform
 
-The existing magazine stays on GitHub Pages. Supabase supplies the private editorial desk, verified editor and contributor accounts, PostgreSQL, private image storage and a small server-side integration. Beehiiv remains the subscriber system. Tally remains the public alternative for pitches.
+The magazine is live on [Cloudflare Pages](https://without-permission.pages.dev/). GitHub Pages also serves the existing fallback address. Supabase supplies the private editorial desk, verified editor and contributor accounts, PostgreSQL, private image storage and a small server-side integration. Beehiiv remains the subscriber system. Tally remains the public alternative for pitches.
 
 ## Current release
 
 - The public homepage embeds a bilingual Beehiiv signup form with confirmation enabled for the embed. The Contribute page embeds the bilingual Tally form. Both have direct fallback links. The public links, editorial policies, and recruitment pages are available in Arabic and English.
-- GitHub Pages serves the CMS build from the live Supabase project. Contributor self-registration stays disabled until SMTP and verification emails have passed acceptance testing. Tally handles public intake.
+- Cloudflare Pages serves the CMS build from the live Supabase project. Contributor self-registration stays disabled until SMTP and verification emails have passed acceptance testing. Tally handles public intake.
 
 ## Why this setup
 
-GitHub Pages serves accessible static HTML including each article's title and search metadata. A Git-based CMS could handle article revisions, but editorial roles, private contributor profiles and moderation would still need another system. Supabase handles those features in one system and supports database-side permissions. A separately built Cloudflare Worker would also work, with more identity and editorial infrastructure to maintain.
+The public Pages builds serve accessible static HTML including each article's title and search metadata. A Git-based CMS could handle article revisions, but editorial roles, private contributor profiles and moderation would still need another system. Supabase handles those features in one system and supports database-side permissions. A separately built Cloudflare Worker would also work, with more identity and editorial infrastructure to maintain.
 
 The workflow builds approved snapshots. It never serves draft rows or renders contributor-supplied executable HTML. Editing a published article starts a new draft while its prior approved version remains live. The two language editions are edited independently and published together as one article. The Arabic URL stays stable; published English editions have an additional indexable path and the existing language query switch still works. Existing raw archive routes and legacy redirects are retained.
 
