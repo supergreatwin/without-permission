@@ -214,6 +214,10 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
       $(nav).append(`<a href="${prefix+path+(en?"?lang=en":"")}">${label}</a>`);
     }
   }
+  if(!fixture && site===canonicalSite && (!process.env.CF_PAGES || process.env.CF_PAGES_BRANCH==="main")
+    && !$('meta[name=robots]').attr("content")?.includes("noindex")){
+    $("head").append(`<link rel="stylesheet" href="${prefix}analytics.css"><script defer src="${prefix}analytics.js" data-measurement-id="G-56TL2L5S62"></script>`);
+  }
   if(!fixture){
     $("body").append(`<script src="${prefix}desk/config.js" defer></script><script src="${prefix}traffic.js" defer></script>`);
   }

@@ -1,0 +1,7 @@
+.analytics-settings { display: block; margin: 1rem auto; }
+.analytics-dialog { max-width: min(32rem, 90vw); padding: 1.5rem; color: #2d2023; background: #f8f4ec; border: 1px solid #67485a; border-radius: .6rem; }
+.analytics-dialog[open]:not(:modal) { position: fixed; inset: auto 1rem 1rem; z-index: 1000; margin: 0 auto; }
+.analytics-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+.analytics-dialog p { margin: .75rem 0; }
+.analytics-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.analytics-actions button, .analytics-settings { padding: .45rem .75rem; font: inherit; color: #2d2023; background: #f8f4ec; border: 1px solid #67485a; border-radius: .25rem; cursor: pointer; }
