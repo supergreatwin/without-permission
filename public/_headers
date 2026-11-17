@@ -1,0 +1,7 @@
+/desk/*
+  X-Robots-Tag: noindex, nofollow
+/editorial-version.json
+  Cache-Control: no-store
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

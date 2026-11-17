@@ -35,6 +35,12 @@ jobs:
           TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
       - name: Verify archive and protected desk export
         run: node tools/verify-dist.mjs
+      - name: Refresh Cloudflare when published articles change
+        if: github.event_name != 'push' && vars.WP_CLOUDFLARE_SITE_URL != ''
+        run: node tools/refresh-cloudflare.mjs
+        env:
+          WP_CLOUDFLARE_SITE_URL: ${{ vars.WP_CLOUDFLARE_SITE_URL }}
+          WP_CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.WP_CLOUDFLARE_DEPLOY_HOOK }}
       - uses: actions/upload-artifact@v4
         if: vars.WP_ENABLE_PAGES_DEPLOY != 'true'
         with:

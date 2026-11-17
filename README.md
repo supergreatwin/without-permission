@@ -72,6 +72,14 @@ The test suite runs migrations in a local PostgreSQL runtime with stand-ins for 
 
 6. Run the acceptance checks below. Verify that the `without-permission-analytics-cleanup` job from migration 202611160005 is active in Supabase Cron. It expires temporary counters and old traffic detail daily.
 
+## Cloudflare Pages deployment
+
+Connect Cloudflare Pages to `main` and publish `dist`. Use Node.js 24 and run `npm test && npm run build && node tools/verify-dist.mjs`. Set the production `WP_SITE_URL` to the Cloudflare site URL (with trailing slash) and set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` to the existing public connection settings. Configure the Cloudflare build's `WP_EXPORT_TOKEN` as a secret, using a separate read-only token. Disable branch previews unless an isolated Supabase project is configured for them.
+
+Deploy the updated `platform` Edge Function. Set `WP_CLOUDFLARE_SITE_URL` to the production URL and `WP_CLOUDFLARE_EXPORT_TOKEN` to the read-only token used by Cloudflare. The GitHub scheduler continues to process due publications with its existing token. The Cloudflare token reads published snapshots and does not process scheduled publications. Set the Cloudflare production desk as the Supabase Auth Site URL and allow both languages' desk callbacks during the transition.
+
+Set the GitHub repository variable `WP_CLOUDFLARE_SITE_URL` to the Cloudflare production URL and store its production deploy hook under `WP_CLOUDFLARE_DEPLOY_HOOK` in GitHub Actions secrets. The scheduled workflow compares the published snapshot version with Cloudflare and triggers a new build only when they differ. Cloudflare deploys `main` pushes through its Git integration.
+
 ## Editor and contributor instructions
 
 - A reader can verify an account, fill in a name or pen name, and send a private contributor application. An administrator approves the application or assigns an editorial role from **Accounts**. The Tally form on the public site remains available.

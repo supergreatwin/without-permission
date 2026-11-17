@@ -1,4 +1,5 @@
 import { access, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { extname, dirname, join, resolve, sep } from "node:path";
 import { build } from "esbuild";
 import { load } from "cheerio";
@@ -35,6 +36,11 @@ if(!Array.isArray(exported.rows)||exported.rows.filter(row=>/^archive\/\d{16,22}
 
 await rm(target,{recursive:true,force:true});
 await cp(template,target,{recursive:true});
+const notFound=join(target,"404.html");
+const notFoundPage=load(await readFile(notFound,"utf8"));
+notFoundPage('a[href="/"]').attr("href",site);
+notFoundPage('a[href="/?lang=en"]').attr("href",new URL("?lang=en",site).href);
+await writeFile(notFound,notFoundPage.html());
 const config={siteUrl:site,supabaseUrl,supabaseKey,platformUrl,captchaSiteKey:process.env.TURNSTILE_SITE_KEY,publicRegistration:process.env.WP_PUBLIC_REGISTRATION==="true"};
 await writeFile(join(target,"desk/config.js"),"window.wpConfig=Object.freeze("+JSON.stringify(config)+");\n");
 await build({entryPoints:["frontend/desk.mjs"],outfile:join(target,"desk/desk.js"),bundle:true,platform:"browser",format:"iife",target:"es2022", minify:true});
@@ -63,6 +69,10 @@ for(const [path,signed] of Object.entries(exported.assets)){
 }
 
 const rows=exported.rows.sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
+const editorialSnapshot=rows.map(({route,visible,passthrough,published_at,updated_at})=>({route,visible,passthrough,published_at,updated_at}))
+  .sort((a,b)=>a.route.localeCompare(b.route));
+const editorialVersion=createHash("sha256").update(JSON.stringify(editorialSnapshot)).digest("hex");
+await writeFile(join(target,"editorial-version.json"),JSON.stringify({version:editorialVersion})+"\n");
 const publicPages=["links/","policies/","recruit/"];
 for(const row of rows){
   if(!articleRoute.test(row.route))throw new Error("Unexpected article route");
