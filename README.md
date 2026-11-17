@@ -78,7 +78,7 @@ Connect Cloudflare Pages to `main` and publish `dist`. Use Node.js 24 and run `n
 
 Deploy the updated `platform` Edge Function. Set `WP_CLOUDFLARE_SITE_URL` to the production URL and `WP_CLOUDFLARE_EXPORT_TOKEN` to the read-only token used by Cloudflare. The GitHub scheduler continues to process due publications with its existing token. The Cloudflare token reads published snapshots and does not process scheduled publications. Set the Cloudflare production desk as the Supabase Auth Site URL and allow both languages' desk callbacks during the transition.
 
-Set the GitHub repository variable `WP_CLOUDFLARE_SITE_URL` to the Cloudflare production URL and store its production deploy hook under `WP_CLOUDFLARE_DEPLOY_HOOK` in GitHub Actions secrets. The scheduled workflow compares the published snapshot version with Cloudflare and triggers a new build only when they differ. Cloudflare deploys `main` pushes through its Git integration.
+Set the GitHub repository variable `WP_CLOUDFLARE_SITE_URL` to the Cloudflare production URL and store its production deploy hook under `WP_CLOUDFLARE_DEPLOY_HOOK` in GitHub Actions secrets. The scheduled workflow compares the published snapshot version with Cloudflare and triggers a new build only when they differ. Cloudflare deploys `main` pushes through its Git integration. An operator can also run `Publish Without Permission` with the rebuild checkbox selected to request a deployment on demand.
 
 ## Editor and contributor instructions
 

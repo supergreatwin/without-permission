@@ -3,6 +3,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      force_cloudflare_rebuild:
+        description: Rebuild Cloudflare Pages even if editorial content is current
+        type: boolean
+        default: false
   repository_dispatch:
     types: [without-permission-publish]
   schedule:
@@ -41,6 +46,7 @@ jobs:
         env:
           WP_CLOUDFLARE_SITE_URL: ${{ vars.WP_CLOUDFLARE_SITE_URL }}
           WP_CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.WP_CLOUDFLARE_DEPLOY_HOOK }}
+          WP_CLOUDFLARE_FORCE_REBUILD: ${{ inputs.force_cloudflare_rebuild }}
       - uses: actions/upload-artifact@v4
         if: vars.WP_ENABLE_PAGES_DEPLOY != 'true'
         with:

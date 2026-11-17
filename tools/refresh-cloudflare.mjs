@@ -9,18 +9,21 @@ if (origin.protocol !== "https:" || origin.href !== `${origin.origin}/`
   throw new Error("Invalid Cloudflare Pages origin or deploy hook configuration");
 }
 
-const { version } = JSON.parse(await readFile(new URL("../dist/editorial-version.json", import.meta.url), "utf8"));
-const live = await fetch(new URL("editorial-version.json", origin), { cache: "no-store", signal: AbortSignal.timeout(15000) });
-if (!live.ok && live.status !== 404) throw new Error(`Cloudflare version check failed (${live.status})`);
-if (live.ok && (await live.json()).version === version) {
-  console.log("Cloudflare Pages already has the current editorial snapshot.");
-} else {
-  let deployment;
-  try {
-    deployment = await fetch(hook, { method: "POST", redirect: "error", signal: AbortSignal.timeout(15000) });
-  } catch {
-    throw new Error("Cloudflare deployment request could not be sent");
+if (process.env.WP_CLOUDFLARE_FORCE_REBUILD !== "true") {
+  const { version } = JSON.parse(await readFile(new URL("../dist/editorial-version.json", import.meta.url), "utf8"));
+  const live = await fetch(new URL("editorial-version.json", origin), { cache: "no-store", signal: AbortSignal.timeout(15000) });
+  if (!live.ok && live.status !== 404) throw new Error(`Cloudflare version check failed (${live.status})`);
+  if (live.ok && (await live.json()).version === version) {
+    console.log("Cloudflare Pages already has the current editorial snapshot.");
+    process.exit(0);
   }
-  if (!deployment.ok) throw new Error(`Cloudflare deployment request failed (${deployment.status})`);
-  console.log("Queued a Cloudflare Pages deployment for the new editorial snapshot.");
 }
+
+let deployment;
+try {
+  deployment = await fetch(hook, { method: "POST", redirect: "error", signal: AbortSignal.timeout(15000) });
+} catch {
+  throw new Error("Cloudflare deployment request could not be sent");
+}
+if (!deployment.ok) throw new Error(`Cloudflare deployment request failed (${deployment.status})`);
+console.log("Queued a Cloudflare Pages deployment.");
