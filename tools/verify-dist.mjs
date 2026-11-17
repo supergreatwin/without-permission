@@ -53,4 +53,21 @@ if(publicConfig.supabaseKey){
   });
   assert.ok([401,403].includes(privateTable.status),"Signed-out requests must not access editorial articles");
 }
+// Every public article in the sitemap must appear on the Stories page.
+const sitemapText = await readFile(path("sitemap.xml"), "utf8");
+const publishedArticlePaths = [...new Set([...sitemapText.matchAll(/<loc>([^<]+)<\/loc>/g)]
+  .map((match) => new URL(match[1]).pathname.match(/\/articles\/([a-z0-9]+(?:-[a-z0-9]+)*)\/$/)?.[1])
+  .filter(Boolean).map((slug) => `articles/${slug}/`))];
+assert.ok(publishedArticlePaths.length, "No published articles found in the sitemap");
+const stories = await inspect("stories/index.html");
+for (const route of publishedArticlePaths) {
+  assert.ok(stories(`main a[href="../${route}"]`).length,
+    `Published article ${route} is missing from the Stories listing`);
+  const page = await inspect(`${route}index.html`);
+  assert.ok(page("main article").length, `Published article ${route} has no article body`);
+  assert.equal(page('meta[name="robots"][content*="noindex"]').length, 0,
+    `Published article ${route} must be indexable`);
+}
+console.log(`Verified ${publishedArticlePaths.length} public articles and their Stories listing links.`);
+
 console.log("Built site verified: 31 preserved archive URLs, embedded newsletter and pitch forms, and a protected editorial desk.");
