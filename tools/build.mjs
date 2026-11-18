@@ -9,7 +9,7 @@ const target=resolve("dist");
 const template=resolve("public");
 const fixture=process.argv.includes("--fixture");
 const site=process.env.WP_SITE_URL ?? "https://supergreatwin.github.io/without-permission/";
-const canonicalSite="https://without-permission.pages.dev/";
+const canonicalSite="https://mengherezn.com/";
 if(!new URL(site).pathname.endsWith("/"))throw new Error("WP_SITE_URL requires a trailing slash");
 const supabaseUrl=process.env.SUPABASE_URL;
 const supabaseKey=process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -214,7 +214,7 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
       $(nav).append(`<a href="${prefix+path+(en?"?lang=en":"")}">${label}</a>`);
     }
   }
-  if(!fixture && site===canonicalSite && (!process.env.CF_PAGES || process.env.CF_PAGES_BRANCH==="main")
+  if(!fixture && (site===canonicalSite || site==="https://without-permission.pages.dev/") && (!process.env.CF_PAGES || process.env.CF_PAGES_BRANCH==="main")
     && !$('meta[name=robots]').attr("content")?.includes("noindex")){
     $("head").append(`<link rel="stylesheet" href="${prefix}analytics.css"><script defer src="${prefix}analytics.js" data-measurement-id="G-56TL2L5S62"></script>`);
   }
