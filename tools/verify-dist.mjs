@@ -65,8 +65,10 @@ for (const route of publishedArticlePaths) {
     `Published article ${route} is missing from the Stories listing`);
   const page = await inspect(`${route}index.html`);
   assert.ok(page("main article").length, `Published article ${route} has no article body`);
-  assert.equal(page('meta[name="robots"][content*="noindex"]').length, 0,
-    `Published article ${route} must be indexable`);
+  // The retired GitHub Pages mirror must be deindexed; Cloudflare production must not.
+  const githubMirror = new URL(process.env.WP_SITE_URL || 'https://supergreatwin.github.io/without-permission/').hostname.endsWith('.github.io');
+  assert.equal(page('meta[name="robots"][content*="noindex"]').length, githubMirror ? 1 : 0,
+    `Published article ${route} has the wrong indexing policy for this host`);
 }
 console.log(`Verified ${publishedArticlePaths.length} public articles and their Stories listing links.`);
 
