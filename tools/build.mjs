@@ -154,6 +154,12 @@ for(const filename of files.filter(file=>file.endsWith("index.html")&&!file.star
   const prefix="../".repeat(filename.split(sep).length-1)||"./";
   const route=filename.split(sep).join("/").replace(/index\.html$/,"");
   const canonical=canonicalSite+route;
+  // Retire the GitHub Pages mirror without affecting Cloudflare or the branded domain.
+  if(new URL(site).hostname.endsWith(".github.io")){
+    $('head').append('<meta name="robots" content="noindex,follow">');
+    const redirectTarget=JSON.stringify(canonical);
+    $('head').prepend('<script>location.replace('+redirectTarget+'+location.search+location.hash)</script>');
+  }
   if (!$('link[rel="canonical"]').length) $("head").append('<link rel="canonical">');
   $('link[rel="canonical"]').attr("href",canonical);
   $('meta[property="og:url"]').attr("content",canonical);
